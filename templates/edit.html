@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+
+<style>
+.edit-box {
+    max-width: 400px;
+    margin: 60px auto;
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+}
+
+.edit-box input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    margin-bottom: 15px;
+}
+
+.edit-box button {
+    background: #2563eb;
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+</style>
+
+<div class="edit-box">
+    <h3>Edit Task</h3>
+
+    <form method="POST">
+        <input type="text" name="task" value="{{ task['task'] }}" maxlength="60" required>
+        <button type="submit">Save Changes</button>
+    </form>
+</div>
+
+{% endblock %}

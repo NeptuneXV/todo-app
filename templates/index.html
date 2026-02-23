@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+
+<style>
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #e6f0ff, #f3e6ff);
+    display: flex;
+    flex-direction: column;
+}
+
+.welcome {
+    font-family: 'Dancing Script', cursive;
+    text-align: center;
+    font-size: 40px;
+    margin-top: 30px;
+}
+
+.dashboard {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    margin: 10px 0 25px 0;
+    font-weight: 500;
+}
+
+.logout {
+    position: absolute;
+    top: 20px;
+    right: 25px;
+    cursor: pointer;
+    color: #333;
+}
+
+.task-box {
+    background: white;
+    width: 80%;
+    margin: auto;
+    border-radius: 16px;
+    padding: 30px;
+    min-height: 65vh;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+}
+
+.add-section {
+    display: flex;
+    gap: 15px;
+    width: 100%;
+}
+
+.add-section input,
+.add-section select {
+    flex: 1;
+    padding: 14px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    font-size: 15px;
+}
+
+.add-btn {
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    border: none;
+    background: #6a5acd;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 20px rgba(106, 90, 205, 0.3);
+    transition: all 0.3s ease;
+}
+
+.add-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 25px rgba(106, 90, 205, 0.4);
+}
+
+.task-list {
+    margin-top: 25px;
+    overflow-y: auto;
+}
+
+.task-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    border-radius: 10px;
+    transition: 0.2s ease;
+    position: relative;
+}
+
+.task-item:hover {
+    background: #f5f7ff;
+}
+
+.task-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+}
+
+.delete-btn:hover {
+    color: red;
+}
+
+.priority-label {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: white;
+}
+
+.p1 { background: #e63946; }
+.p2 { background: #ff9f1c; }
+.p3 { background: #ffd60a; color: black; }
+.p4 { background: #2a9d8f; }
+
+.drag-line {
+    height: 2px;
+    background: #6a5acd;
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -2px;
+    display: none;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background: white;
+    padding: 25px;
+    border-radius: 14px;
+    width: 320px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+}
+
+.modal-content input,
+.modal-content select {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: space-between;
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 14px;
+    margin-top: auto;
+}
+</style>
+
+<a href="/logout" class="logout">
+    <span class="material-icons">logout</span>
+</a>
+
+<div class="welcome">
+    Welcome, {{ session["username"] }}
+</div>
+
+<div class="dashboard">
+    <div>Total: {{ total }}</div>
+    <div>Completed: {{ completed }}</div>
+    <div>Pending: {{ pending }}</div>
+</div>
+
+<div class="task-box">
+
+    <form method="POST" action="/add" class="add-section">
+        <input type="text" name="task" placeholder="New Task" required>
+        <input type="date" name="due_date" placeholder="Select the Date">
+        <select name="priority">
+            <option disabled selected>Eisenhower Matrix</option>
+            <option value="p1">Urgent & Important</option>
+            <option value="p2">Not Urgent but Important</option>
+            <option value="p3">Urgent but Not Important</option>
+            <option value="p4">Neither Urgent nor Important</option>
+        </select>
+        <button class="add-btn">
+            <span class="material-icons">add</span>
+        </button>
+    </form>
+
+    <div class="task-list" id="taskList">
+        {% for task in tasks %}
+        <div class="task-item" draggable="true">
+
+            <div class="task-left">
+                <input type="checkbox"
+                {% if task.status == 1 %}checked{% endif %}
+                onclick="location.href='/complete/{{ task.id }}'">
+
+                <span>{{ task.task }}</span>
+
+                {% if task.priority %}
+                <span class="priority-label {{ task.priority }}">
+                    {% if task.priority == "p1" %}Urgent & Important{% endif %}
+                    {% if task.priority == "p2" %}Not Urgent but Important{% endif %}
+                    {% if task.priority == "p3" %}Urgent but Not Important{% endif %}
+                    {% if task.priority == "p4" %}Neither Urgent nor Important{% endif %}
+                </span>
+                {% endif %}
+            </div>
+
+            <div>
+                <button type="button" class="icon-btn"
+                onclick='openModal({{ task.id }}, {{ task.task|tojson }}, {{ task.due_date|tojson }}, {{ task.priority|tojson }})'>
+                    <span class="material-icons">edit</span>
+                </button>
+
+                <button type="button" class="icon-btn delete-btn"
+                onclick="location.href='/delete/{{ task.id }}'">
+                    <span class="material-icons">delete</span>
+                </button>
+            </div>
+
+            <div class="drag-line"></div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal" id="editModal">
+    <div class="modal-content">
+        <form method="POST" id="editForm">
+            <input type="text" name="task" id="editTask" required>
+            <input type="date" name="due_date" id="editDate">
+            <select name="priority" id="editPriority">
+                <option value="p1">Urgent & Important</option>
+                <option value="p2">Not Urgent but Important</option>
+                <option value="p3">Urgent but Not Important</option>
+                <option value="p4">Neither Urgent nor Important</option>
+            </select>
+            <div class="modal-actions">
+                <button type="submit">Save</button>
+                <button type="button" onclick="closeModal()">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<footer>
+    Made with ❤️ by Jeevadharshan
+</footer>
+
+<script>
+function openModal(id, task, date, priority) {
+    document.getElementById("editModal").style.display = "flex";
+    document.getElementById("editTask").value = task || "";
+    document.getElementById("editDate").value = date || "";
+    document.getElementById("editPriority").value = priority || "";
+    document.getElementById("editForm").action = "/edit/" + id;
+}
+
+function closeModal() {
+    document.getElementById("editModal").style.display = "none";
+}
+
+let dragged;
+
+document.querySelectorAll(".task-item").forEach(item => {
+
+    item.addEventListener("dragstart", function () {
+        dragged = this;
+        this.style.opacity = .5;
+    });
+
+    item.addEventListener("dragend", function () {
+        this.style.opacity = "";
+        document.querySelectorAll(".drag-line").forEach(l => l.style.display = "none");
+    });
+
+    item.addEventListener("dragover", function (e) {
+        e.preventDefault();
+        this.querySelector(".drag-line").style.display = "block";
+    });
+
+    item.addEventListener("dragleave", function () {
+        this.querySelector(".drag-line").style.display = "none";
+    });
+
+    item.addEventListener("drop", function () {
+        this.parentNode.insertBefore(dragged, this);
+        this.querySelector(".drag-line").style.display = "none";
+    });
+
+});
+</script>
+
+{% endblock %}
